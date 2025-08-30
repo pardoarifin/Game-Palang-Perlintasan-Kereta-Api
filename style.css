@@ -1,0 +1,154 @@
+body {
+  margin: 0;
+  padding: 0;
+  width: 5px;
+  height: 25vh;
+  overflow: hidden;
+}
+
+#bg{
+  position: fixed;
+  left:-20px;
+  width: 60vh;
+  height: 100vh;
+}
+
+#press{
+  opacity: 0;
+  position: relative;
+  left:15%;
+  top: 15%;
+  width: 250px;
+  height: 200px;
+  border: 1px solid;
+  background:green;
+  z-index: 20;
+}
+#tiang-lampu{
+  position: fixed;
+  left: 15.2%;
+  top: 0.2%;
+  z-index: 10;
+  width: 35vh;
+  height: 35vh;
+  transform-origin: 0% 50%;
+  
+  
+}
+
+
+
+#palang {
+  position: fixed;
+  left: 18%;
+  top: 5%;
+  z-index: 10;
+  max-width: 45vw;
+  height: auto;
+  transform-origin: 40% 13%;/*ini adalah sumbu poros perputaran*/
+  transition: transform 3s ease-in-out;
+  transform: rotate(-60deg);
+} /* Palang dalam posisi awal (tertutup) */
+
+#train {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%) translateY(100vh);
+  display: none;
+}
+
+
+
+#lampu-container {
+  display: block;
+  z-index: 15;
+  position: absolute;
+  left: 48.5%;
+  top: 9.5%;
+  margin-top: 10px;
+}
+
+.lampu {
+  margin-bottom: 22px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: red;
+  opacity: 0.1;
+  transition: opacity 0.1s;
+}
+
+
+
+#train img {
+  display: block;
+  width: 100vh;
+  height: 100vh;
+  object-fit: contain;
+}
+
+#startButton {
+  position: fixed;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%) rotate(90deg);
+  width: 90px;
+  height: 90px;
+  background-color: red;
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+#startButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+
+ 
+ #tombolPeluit{
+   position: fixed;
+   width: 50px;
+   height: 40px;
+   font-size: 70px;
+   bottom: 40%;
+   right: 13%;
+   z-index: 20;
+   transform: rotate(-50deg)
+ }
+
+#tombolLonceng{
+  font-size: 60px;
+  position: absolute;
+  bottom: 60%;
+  right: 3%;
+  transform: rotate(90deg);
+  z-index: 20;
+}
+
+
+@keyframes lompat {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(90px);
+  }
+  50% {
+    transform: translateX(0);
+  }
+  75% {
+    transform: translateX(30px);
+  }
+}
+
+@keyframes wave {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(5deg); }
+      50% { transform: rotate(-10deg); }
+      75% { transform: rotate(8deg); }
+    }

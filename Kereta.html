@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Game Kereta Api</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <img id="bg" src="/gambar/bg.jpg" alt="Gambarnya">
+   <button id="press"></button>
+  <img id="tiang-lampu" src="/gambar/lampu.png" alt="Gambar Lampu">
+  
+  <img id="palang" src="/gambar/palang.png" alt="Gambar palang">
+
+  <button id="startButton" onclick="startTrain()">Start</button>
+  <div id="train"></div>
+  
+  <div id="lampu-container">
+    <div id="lampu1" class="lampu"></div>
+    <div id="lampu2" class="lampu"></div>
+  </div>
+  
+  <div id="bel">
+    <div id="tombolPeluit">🔊</div>
+    <div id="tombolLonceng">🔔</div>
+    
+  </div>
+  
+  <audio id="sirine" src="/suara/sirine.mp3"></audio>
+  <audio id="suaraKereta" src="/suara/train-passing-by-283841.mp3"></audio>
+  
+  <audio src="/suara/boing2.mp3" id="suaraLompat"></audio>
+  
+  <audio src="/suara/cartoonslip.mp3" id="suaraGoyang"></audio>
+  
+  <audio  id="suaraLonceng" src="/suara/lonceng kereta.mp3"></audio>
+  
+  <audio src="/suara/steam-whistle.mp3" id="suaraPeluit"></audio>
+  
+  <script src="script.js"></script>
+</body>
+</html>

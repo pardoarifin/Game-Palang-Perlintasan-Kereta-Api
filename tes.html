@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aplikasi Gambar</title>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    background: #cce0ff;
+  }
+  #canvas-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #cce0ff;
+    padding: 10px 0;
+  }
+  #canvas {
+    width: 90vw;
+    height: 60vh;
+    background: #fff;
+    border: 2px solid #bbb;
+    touch-action: none;
+  }
+  #controls {
+    background: linear-gradient(#cce0ff, #b3d1ff);
+    border-top: 1px solid #888;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+  .form-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  #shapeMenuButton {
+    padding: 8px 14px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: none;
+    background: #007bff;
+    color: white;
+  }
+  #shapeMenu {
+    position: absolute;
+    bottom: 90px;
+    background: white;
+    padding: 10px;
+    border: 1px solid #aaa;
+    border-radius: 8px;
+    display: none;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    z-index: 10;
+  }
+  .shape-option {
+    width: 50px;
+    height: 50px;
+    background: #f0f0f0;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+  }
+  .shape-option.selected {
+    border-color: #007bff;
+    background: #ddeeff;
+  }
+  button {
+    padding: 8px 14px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: none;
+    background: #007bff;
+    color: white;
+  }
+  button:hover {
+    background: #0056b3;
+  }
+  input[type="number"], input[type="color"] {
+    padding: 6px;
+    font-size: 14px;
+    width: 70px;
+    border-radius: 4px;
+    border: 1px solid #aaa;
+  }
+  canvas.drawing-icon {
+    width: 30px;
+    height: 30px;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="canvas-container">
+  <canvas id="canvas"></canvas>
+</div>
+
+<div id="controls">
+  <div class="form-row">
+    <button id="shapeMenuButton">Pilih Bentuk</button>
+  </div>
+
+  <div id="shapeMenu" class="form-row"></div>
+
+  <div class="form-row">
+    <label>Panjang: <input type="number" id="widthInput" min="10" value="100"></label>
+    <label>Tinggi: <input type="number" id="heightInput" min="10" value="100"></label>
+    <label>Warna Objek: <input type="color" id="colorInput" value="#000000"></label>
+    <label>Warna Latar: <input type="color" id="bgColorInput" value="#ffffff"></label>
+  </div>
+
+  <div class="form-row">
+    <button id="addButton">Tambah</button>
+    <button id="updateButton">Perbarui</button>
+    <button id="deleteButton">Hapus</button>
+    <button id="resetButton">Reset Semua</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const shapes = [];
+let selectedShapeIndex = null;
+let currentShapeType = 'square';
+let canvasBgColor = '#ffffff';
+
+function resizeCanvas() {
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+  drawAll();
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+const shapeTypes = [
+  { type: 'square', draw: (x, y, w, h) => ctx.rect(x - w/2, y - h/2, w, h), icon: drawIconSquare },
+  { type: 'triangle', draw: (x, y, w, h) => {
+    ctx.moveTo(x, y - h/2);
+    ctx.lineTo(x - w/2, y + h/2);
+    ctx.lineTo(x + w/2, y + h/2);
+    ctx.closePath();
+  }, icon: drawIconTriangle },
+  { type: 'hexagon', draw: (x, y, w, h) => {
+    const r = Math.min(w, h) / 2;
+    for (let i = 0; i < 6; i++) {
+      const angle = Math.PI / 3 * i - Math.PI/2;
+      const px = x + r * Math.cos(angle);
+      const py = y + r * Math.sin(angle);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  }, icon: drawIconHexagon },
+  { type: 'circle', draw: (x, y, w, h) => {
+    ctx.ellipse(x, y, w/2, h/2, 0, 0, Math.PI*2);
+  }, icon: drawIconCircle },
+  { type: 'parallelogram', draw: (x, y, w, h) => {
+    ctx.moveTo(x - w/2 + 20, y - h/2);
+    ctx.lineTo(x + w/2, y - h/2);
+    ctx.lineTo(x + w/2 - 20, y + h/2);
+    ctx.lineTo(x - w/2, y + h/2);
+    ctx.closePath();
+  }, icon: drawIconParallelogram }
+];
+
+const shapeMenu = document.getElementById('shapeMenu');
+shapeTypes.forEach(s => {
+  const div = document.createElement('div');
+  div.className = 'shape-option';
+  const iconCanvas = document.createElement('canvas');
+  iconCanvas.className = 'drawing-icon';
+  iconCanvas.width = 30;
+  iconCanvas.height = 30;
+  const iconCtx = iconCanvas.getContext('2d');
+  s.icon(iconCtx);
+  div.appendChild(iconCanvas);
+  div.addEventListener('click', () => {
+    document.querySelectorAll('.shape-option').forEach(d => d.classList.remove('selected'));
+    div.classList.add('selected');
+    currentShapeType = s.type;
+    shapeMenu.style.display = 'none';
+  });
+  shapeMenu.appendChild(div);
+});
+
+document.getElementById('shapeMenuButton').addEventListener('click', () => {
+  shapeMenu.style.display = shapeMenu.style.display === 'flex' ? 'none' : 'flex';
+});
+
+function drawAll() {
+  ctx.fillStyle = canvasBgColor;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  shapes.forEach((s, i) => {
+    ctx.beginPath();
+    const shapeDef = shapeTypes.find(st => st.type === s.type);
+    shapeDef.draw(s.x, s.y, s.w, s.h);
+    ctx.fillStyle = s.color;
+    ctx.fill();
+    if (i === selectedShapeIndex) {
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'red';
+      ctx.stroke();
+    }
+  });
+}
+
+document.getElementById('addButton').addEventListener('click', () => {
+  const w = parseInt(document.getElementById('widthInput').value);
+  const h = parseInt(document.getElementById('heightInput').value);
+  const color = document.getElementById('colorInput').value;
+  const shape = { type: currentShapeType, x: canvas.width/2, y: canvas.height/2, w, h, color };
+  shapes.push(shape);
+  selectedShapeIndex = shapes.length - 1;
+  drawAll();
+});
+
+document.getElementById('updateButton').addEventListener('click', () => {
+  if (selectedShapeIndex === null) return;
+  const w = parseInt(document.getElementById('widthInput').value);
+  const h = parseInt(document.getElementById('heightInput').value);
+  const color = document.getElementById('colorInput').value;
+  shapes[selectedShapeIndex].color = color;
+  shapes[selectedShapeIndex].w = w;
+  shapes[selectedShapeIndex].h = h;
+  drawAll();
+});
+
+document.getElementById('deleteButton').addEventListener('click', () => {
+  if (selectedShapeIndex === null) return;
+  shapes.splice(selectedShapeIndex, 1);
+  selectedShapeIndex = null;
+  drawAll();
+});
+
+document.getElementById('resetButton').addEventListener('click', () => {
+  shapes.length = 0;
+  selectedShapeIndex = null;
+  drawAll();
+});
+
+document.getElementById('bgColorInput').addEventListener('input', (e) => {
+  canvasBgColor = e.target.value;
+  drawAll();
+});
+
+let dragging = false;
+let offsetX = 0;
+let offsetY = 0;
+
+canvas.addEventListener('touchstart', (e) => {
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const tx = touch.clientX - rect.left;
+  const ty = touch.clientY - rect.top;
+
+  selectedShapeIndex = null;
+  for (let i = shapes.length -1; i >= 0; i--) {
+    ctx.beginPath();
+    const s = shapes[i];
+    const shapeDef = shapeTypes.find(st => st.type === s.type);
+    shapeDef.draw(s.x, s.y, s.w, s.h);
+    if (ctx.isPointInPath(tx, ty)) {
+      selectedShapeIndex = i;
+      document.getElementById('widthInput').value = s.w;
+      document.getElementById('heightInput').value = s.h;
+      document.getElementById('colorInput').value = s.color;
+      offsetX = tx - s.x;
+      offsetY = ty - s.y;
+      dragging = true;
+      break;
+    }
+  }
+  drawAll();
+});
+
+canvas.addEventListener('touchmove', (e) => {
+  if (!dragging) return;
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  const tx = touch.clientX - rect.left;
+  const ty = touch.clientY - rect.top;
+  shapes[selectedShapeIndex].x = tx - offsetX;
+  shapes[selectedShapeIndex].y = ty - offsetY;
+  drawAll();
+}, { passive: false });
+
+canvas.addEventListener('touchend', () => {
+  dragging = false;
+});
+
+function drawIconSquare(ctx) {
+  ctx.fillStyle = '#555';
+  ctx.fillRect(5, 5, 20, 20);
+}
+function drawIconTriangle(ctx) {
+  ctx.beginPath();
+  ctx.moveTo(15, 5);
+  ctx.lineTo(5, 25);
+  ctx.lineTo(25, 25);
+  ctx.closePath();
+  ctx.fillStyle = '#555';
+  ctx.fill();
+}
+function drawIconHexagon(ctx) {
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const angle = Math.PI/3*i - Math.PI/2;
+    const x = 15 + 10 * Math.cos(angle);
+    const y = 15 + 10 * Math.sin(angle);
+    if (i === 0) ctx.moveTo(x,y);
+    else ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = '#555';
+  ctx.fill();
+}
+function drawIconCircle(ctx) {
+  ctx.beginPath();
+  ctx.arc(15, 15, 10, 0, Math.PI*2);
+  ctx.fillStyle = '#555';
+  ctx.fill();
+}
+function drawIconParallelogram(ctx) {
+  ctx.beginPath();
+  ctx.moveTo(8,5);
+  ctx.lineTo(25,5);
+  ctx.lineTo(20,25);
+  ctx.lineTo(3,25);
+  ctx.closePath();
+  ctx.fillStyle = '#555';
+  ctx.fill();
+}
+</script>
+
+</body>
+</html>
